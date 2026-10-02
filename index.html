@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, user-scalable=no">
+  <title>Atrapa las Manzanas - Modo Difícil</title>
+  <style>
+    :root {
+      --primary: #ff334b;
+      --primary-hover: #e0243b;
+      --secondary: #2ecc71;
+      --bg-gradient: linear-gradient(135deg, #1e3c72 0%, #2a5298 100%);
+      --card-bg: rgba(255, 255, 255, 0.95);
+      --text-color: #2c3e50;
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+
+    body {
+      background: var(--bg-gradient);
+      min-height: 100vh;
+      padding: 16px;
+      color: var(--text-color);
+      display: flex;
+      justify-content: center;
+      align-items: center;
+    }
+
+    .wrap {
+      width: 100%;
+      max-width: 440px;
+    }
+
+    h1 {
+      text-align: center;
+      color: #fff;
+      margin-bottom: 16px;
+      font-size: 24px;
+      text-shadow: 0 3px 6px rgba(0,0,0,0.3);
+    }
+
+    .card {
+      background: var(--card-bg);
+      border-radius: 16px;
+      padding: 20px;
+      margin-bottom: 16px;
+      text-align: center;
+      box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+
+    input[type=text],
+    input[type=password] {
+      width: 100%;
+      padding: 12px 16px;
+      font-size: 16px;
+      border: 2px solid #ddd;
+      border-radius: 10px;
+      margin: 10px 0;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input[type=text]:focus,
+    input[type=password]:focus {
+      border-color: var(--secondary);
+    }
+
+    .ayuda { font-size: 12px; margin-top: 10px; color: #555; line-height: 1.5; text-align: left; background: #f1f8f5; padding: 10px; border-radius: 8px;}
+
+    button {
+      background: var(--primary);
+      color: #fff;
+      border: none;
+      border-radius: 10px;
+      padding: 12px 20px;
+      font-size: 16px;
+      font-weight: bold;
+      cursor: pointer;
+      margin: 6px;
+      transition: transform 0.1s, background 0.2s;
+      box-shadow: 0 4px 12px rgba(255, 51, 75, 0.3);
+    }
+
+    button:active { transform: scale(0.97); }
+    button:hover { background: var(--primary-hover); }
+    button.sec { background: var(--secondary); box-shadow: 0 4px 12px rgba(46, 204, 113, 0.3); }
+    button.sec:hover { background: #27ae60; }
+    button.gris { background: #7f8c8d; box-shadow: none; }
+    button.gris:hover { background: #6c7a89; }
+
+    .btn-pausa { padding: 6px 12px; font-size: 14px; margin: 0; }
+    .hidden { display: none !important; }
+
+    #hud {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background: var(--card-bg);
+      border-radius: 12px;
+      padding: 10px 14px;
+      font-weight: bold;
+      font-size: 13px;
+      margin-bottom: 10px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+
+    canvas {
+      width: 100%;
+      display: block;
+      border-radius: 12px;
+      touch-action: none;
+      background: #70c1b3;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.2);
+    }
+
+    table { width: 100%; border-collapse: collapse; font-size: 13px; margin-top: 12px; }
+    th, td { border-bottom: 1px solid #eee; padding: 8px 4px; text-align: left; }
+    td.n, th.n { text-align: right; }
+    th { background: #f8f9fa; color: #555; border-radius: 4px; }
+
+    .premio { font-size: 16px; font-weight: bold; color: #d35400; margin: 12px 0; }
+    .aviso { font-size: 12px; color: #e67e22; margin-top: 8px; }
+
+    #modal {
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.6);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      z-index: 10;
+    }
+    #modal .card { max-width: 340px; width: 100%; margin: 0; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>🍎 Atrapa las Manzanas 🍎</h1>
+
+    <!-- Inicio -->
+    <div id="inicio" class="card">
+      <p><b>¡Modo Desafío Activado!</b></p>
+      <input type="text" id="nombre" maxlength="20" placeholder="Escribe tu nombre">
+      <button id="btnJugar" style="width: 100%;">▶ Comenzar a Jugar</button>
+      <div class="ayuda">
+        <b>Controles:</b> Flechas ← →, A / D o arrastra el dedo.<br>
+        🍎 <b>Normal:</b> +1 punto<br>
+        🍏 <b>Verde:</b> +3 puntos<br>
+        🟡 <b>Dorada:</b> +5 puntos<br>
+        💣 <b>Bomba:</b> -1 vida (3 vidas)<br>
+        🔴 <b>Bomba Roja:</b> ¡Muerte instantánea!
+      </div>
+    </div>
+
+    <!-- Juego -->
+    <div id="juego" class="hidden">
+      <div id="hud">
+        <span>👤 <span id="hNombre"></span></span>
+        <span>⭐ <span id="hPuntos">0</span></span>
+        <span id="hVidas">❤️❤️❤️</span>
+        <span>Lv.<span id="hNivel">1</span></span>
+        <button id="btnPausa" class="sec btn-pausa">⏸</button>
+      </div>
+      <canvas id="lienzo" width="400" height="520"></canvas>
+    </div>
+
+    <!-- Game Over -->
+    <div id="fin" class="card hidden">
+      <h2>¡PARTIDA TERMINADA!</h2>
+      <p style="margin-top: 8px;"><b>Jugador:</b> <span id="fNombre"></span></p>
+      <p><b>Puntaje final:</b> <span id="fPuntos"></span></p>
+      <p><b>Manzanas atrapadas:</b> <span id="fManzanas"></span></p>
+      <div class="premio" id="fPremio"></div>
+      <div class="aviso" id="fEstado"></div>
+      <button id="btnOtra" style="width: 100%; margin-top: 10px;">🔄 Jugar de nuevo</button>
+    </div>
+
+    <!-- Historial -->
+    <div class="card">
+      <h3 style="margin-bottom: 6px;">🏆 Historial de Puntajes</h3>
+      <div class="aviso" id="avisoDB"></div>
+      <table>
+        <thead>
+          <tr><th>Jugador</th><th class="n">Puntos</th><th>Premio</th><th>Fecha</th></tr>
+        </thead>
+        <tbody id="tabla"></tbody>
+      </table>
+      <button id="btnBorrar" class="gris" style="margin-top: 12px; width: 100%;">🗑️ Borrar historial</button>
+    </div>
+  </div>
+
+  <!-- Modal Admin -->
+  <div id="modal" class="hidden">
+    <div class="card">
+      <p><b>¿Seguro que deseas borrar el historial?</b></p>
+      <input type="password" id="pin" placeholder="Contraseña (1234)">
+      <div class="aviso" id="pinError" style="color: red;"></div>
+      <div style="display: flex; gap: 8px; margin-top: 10px;">
+        <button id="btnCancelar" class="gris" style="flex:1;">Cancelar</button>
+        <button id="btnConfirmar" style="flex:1;">Borrar</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    const DB_URL = "";
+    const PIN_ADMIN = "1234";
+
+    const $ = id => document.getElementById(id);
+    const cv = $("lienzo"), ctx = cv.getContext("2d");
+    const W = cv.width, H = cv.height;
+
+    let nombre = "", puntos = 0, vidas = 3, manzanas = 0, nivel = 1;
+    let items = [], jugador = {x: W/2, w: 60, h: 44};
+    let corriendo = false, pausado = false, ultimo = 0, spawnT = 0;
+    let teclas = {};
+
+    function premioPara(p){
+      if (p >= 40) return "Gomitas preparadas";
+      if (p >= 25) return "Paleta";
+      if (p >= 10) return "Sin premio";
+      return "Chocolate";
+    }
+    function premioTexto(p){
+      if (p >= 40) return "🎁 ¡Premio mayor: Gomitas preparadas!";
+      if (p >= 25) return "🎁 ¡Premio intermedio: Una paleta!";
+      if (p >= 10) return "Sigue intentando para ganar un premio.";
+      return "🎁 ¡Premio menor: Un chocolate!";
+    }
+
+    function calcNivel(){ return Math.min(10, Math.floor(puntos / 15) + 1); }
+    // Velocidad base mucho mayor y escala más rápido por nivel
+    function velocidad(){ return 220 + nivel * 55; }
+    function intervalo(){ return Math.max(260, 800 - nivel * 55); }
+
+    function crearItem(){
+      const rand = Math.random();
+      let tipo = "normal";
+      
+      if (rand < 0.12) tipo = "dorada";       // 12% Dorada (+5 pts)
+      else if (rand < 0.32) tipo = "verde";   // 20% Verde (+3 pts)
+      else if (rand < 0.60) tipo = "normal";  // 28% Normal (+1 pt)
+      else if (rand < 0.82) tipo = "bomba";   // 22% Bomba normal (-1 vida)
+      else tipo = "bomba_roja";               // 18% Bomba mortal
+
+      const esBomba = tipo.startsWith("bomba");
+      const vel = velocidad() * (esBomba ? 1.15 : 1) * (0.95 + Math.random() * 0.25);
+      
+      items.push({ x: 25 + Math.random() * (W - 50), y: -25, tipo, vel, r: 16 });
+    }
+
+    function bucle(t){
+      if (!corriendo) return;
+      const dt = Math.min(0.05, (t - ultimo) / 1000);
+      ultimo = t;
+      if (!pausado) actualizar(dt);
+      dibujar();
+      requestAnimationFrame(bucle);
+    }
+
+    function actualizar(dt){
+      // Canasta con velocidad equilibrada para alcanzar objetos rápidos
+      const v = 340;
+      if (teclas["ArrowLeft"] || teclas["a"] || teclas["A"]) jugador.x -= v * dt;
+      if (teclas["ArrowRight"] || teclas["d"] || teclas["D"]) jugador.x += v * dt;
+      jugador.x = Math.max(jugador.w/2, Math.min(W - jugador.w/2, jugador.x));
+
+      spawnT += dt * 1000;
+      if (spawnT >= intervalo()){ spawnT = 0; crearItem(); }
+
+      const py = H - jugador.h - 8;
+      for (let i = items.length - 1; i >= 0; i--){
+        const it = items[i];
+        it.y += it.vel * dt;
+        const choca = it.y + it.r > py && it.y - it.r < py + jugador.h &&
+                      Math.abs(it.x - jugador.x) < jugador.w/2 + it.r * 0.5;
+        if (choca){
+          items.splice(i, 1);
+          if (it.tipo === "bomba_roja"){
+            vidas = 0; // Muerte instantánea
+            navigator.vibrate && navigator.vibrate(300);
+          } else if (it.tipo === "bomba"){
+            vidas--;
+            navigator.vibrate && navigator.vibrate(120);
+          } else if (it.tipo === "dorada"){
+            puntos += 5; manzanas++;
+          } else if (it.tipo === "verde"){
+            puntos += 3; manzanas++;
+          } else {
+            puntos += 1; manzanas++;
+          }
+          nivel = calcNivel();
+          actualizarHUD();
+          if (vidas <= 0){ terminar(); return; }
+        } else if (it.y > H + 30){
+          items.splice(i, 1);
+        }
+      }
+    }
+
+    function dibujar(){
+      const g = ctx.createLinearGradient(0, 0, 0, H);
+      g.addColorStop(0, "#4ca1af"); g.addColorStop(1, "#c4e0e5");
+      ctx.fillStyle = g; ctx.fillRect(0, 0, W, H);
+
+      ctx.fillStyle = "#55a630"; ctx.fillRect(0, H - 12, W, 12);
+
+      ctx.font = "30px serif";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      for (const it of items){
+        let icono = "🍎";
+        if (it.tipo === "verde") icono = "🍏";
+        else if (it.tipo === "dorada") icono = "🟡";
+        else if (it.tipo === "bomba") icono = "💣";
+        else if (it.tipo === "bomba_roja") icono = "🔴";
+        ctx.fillText(icono, it.x, it.y);
+      }
+
+      ctx.font = "42px serif";
+      ctx.fillText("🧺", jugador.x, H - 22);
+
+      if (pausado){
+        ctx.fillStyle = "rgba(0,0,0,0.4)"; ctx.fillRect(0, 0, W, H);
+        ctx.fillStyle = "#fff"; ctx.font = "bold 32px sans-serif";
+        ctx.fillText("PAUSA", W/2, H/2);
+      }
+    }
+
+    function actualizarHUD(){
+      $("hNombre").textContent = nombre;
+      $("hPuntos").textContent = puntos;
+      $("hVidas").textContent = "❤️".repeat(vidas) + "🖤".repeat(3 - vidas);
+      $("hNivel").textContent = nivel;
+    }
+
+    async function terminar(){
+      corriendo = false;
+      $("juego").classList.add("hidden");
+      $("fin").classList.remove("hidden");
+      $("fNombre").textContent = nombre;
+      $("fPuntos").textContent = puntos;
+      $("fManzanas").textContent = manzanas;
+      $("fPremio").textContent = premioTexto(puntos);
+      $("fEstado").textContent = "Guardando puntaje...";
+      const ok = await guardarPartida({
+        nombre, puntos, premio: premioPara(puntos), fecha: new Date().toISOString()
+      });
+      $("fEstado").textContent = ok ? "✅ Partida guardada" : "⚠️ Guardado localmente";
+      cargarHistorial();
+    }
+
+    async function guardarPartida(p){
+      try{
+        if (DB_URL){
+          const r = await fetch(DB_URL + "/partidas.json", {
+            method: "POST", headers: {"Content-Type": "application/json"}, body: JSON.stringify(p)
+          });
+          return r.ok;
+        }
+        const lista = JSON.parse(localStorage.getItem("partidas") || "[]");
+        lista.push(p);
+        localStorage.setItem("partidas", JSON.stringify(lista));
+        return true;
+      }catch(e){ return false; }
+    }
+
+    async function leerPartidas(){
+      if (DB_URL){
+        const r = await fetch(DB_URL + "/partidas.json");
+        const d = await r.json();
+        return d ? Object.values(d) : [];
+      }
+      return JSON.parse(localStorage.getItem("partidas") || "[]");
+    }
+
+    async function borrarPartidas(){
+      if (DB_URL){
+        const r = await fetch(DB_URL + "/partidas.json", {method: "DELETE"});
+        return r.ok;
+      }
+      localStorage.removeItem("partidas");
+      return true;
+    }
+
+    async function cargarHistorial(){
+      $("avisoDB").textContent = DB_URL ? "" : "ℹ️ Historial guardado en tu navegador.";
+      const tb = $("tabla");
+      try{
+        const lista = (await leerPartidas()).sort((a, b) => b.puntos - a.puntos).slice(0, 20);
+        tb.innerHTML = "";
+        if (!lista.length){
+          tb.innerHTML = `<tr><td colspan="4" style="text-align:center; color:#777;">No hay partidas registradas.</td></tr>`;
+          return;
+        }
+        for (const p of lista){
+          const tr = document.createElement("tr");
+          const f = new Date(p.fecha);
+          [p.nombre, p.puntos, p.premio, isNaN(f) ? "" : f.toLocaleDateString("es")].forEach((v, i) => {
+            const td = document.createElement("td");
+            if (i === 1) td.className = "n";
+            td.textContent = v;
+            tr.appendChild(td);
+          });
+          tb.appendChild(tr);
+        }
+      }catch(e){
+        tb.innerHTML = `<tr><td colspan="4" style="text-align:center; color:red;">Error al cargar historial.</td></tr>`;
+      }
+    }
+
+    $("btnBorrar").onclick = () => {
+      $("pin").value = "";
+      $("pinError").textContent = "";
+      $("modal").classList.remove("hidden");
+    };
+    $("btnCancelar").onclick = () => $("modal").classList.add("hidden");
+    $("btnConfirmar").onclick = async () => {
+      if ($("pin").value !== PIN_ADMIN){ $("pinError").textContent = "Contraseña incorrecta"; return; }
+      await borrarPartidas();
+      $("modal").classList.add("hidden");
+      cargarHistorial();
+    };
+
+    addEventListener("keydown", e => {
+      teclas[e.key] = true;
+      if (e.key.startsWith("Arrow")) e.preventDefault();
+    });
+    addEventListener("keyup", e => { teclas[e.key] = false; });
+
+    function moverConPuntero(e){
+      const r = cv.getBoundingClientRect();
+      jugador.x = (e.clientX - r.left) * (W / r.width);
+      jugador.x = Math.max(jugador.w/2, Math.min(W - jugador.w/2, jugador.x));
+    }
+    cv.addEventListener("pointerdown", e => { cv.setPointerCapture(e.pointerId); moverConPuntero(e); });
+    cv.addEventListener("pointermove", e => { if (e.buttons || e.pointerType === "touch") moverConPuntero(e); });
+
+    $("btnPausa").onclick = () => {
+      if (!corriendo) return;
+      pausado = !pausado;
+      $("btnPausa").textContent = pausado ? "▶" : "⏸";
+    };
+
+    $("btnJugar").onclick = () => {
+      const n = $("nombre").value.trim();
+      if (!n){ $("nombre").focus(); $("nombre").style.borderColor = "red"; return; }
+      nombre = n;
+      iniciar();
+    };
+    $("nombre").addEventListener("keydown", e => { if (e.key === "Enter") $("btnJugar").click(); });
+    $("btnOtra").onclick = iniciar;
+
+    function iniciar(){
+      puntos = 0; vidas = 3; manzanas = 0; nivel = 1; items = []; spawnT = 0;
+      jugador.x = W/2; pausado = false; corriendo = true;
+      $("btnPausa").textContent = "⏸";
+      actualizarHUD();
+      $("inicio").classList.add("hidden");
+      $("fin").classList.add("hidden");
+      $("juego").classList.remove("hidden");
+      ultimo = performance.now();
+      requestAnimationFrame(bucle);
+    }
+
+    cargarHistorial();
+  </script>
+</body>
+</html>
